@@ -1,9 +1,11 @@
-import {Button, Image, Text, View, StyleSheet} from 'react-native';
+import {Image, Text, View, StyleSheet} from 'react-native';
 import React from 'react';
 import {removeUser} from '../store/actions/users';
 import Icon from 'react-native-vector-icons/EvilIcons';
+import {useDispatch} from 'react-redux';
 
-const UserCard = (item, dispatch) => {
+const UserCards: () => Node = ({item}) => {
+  const dispatch = useDispatch();
   return (
     <View key={item.id} style={styles.userContainer}>
       <View style={styles.userInfoContainer}>
@@ -52,4 +54,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default UserCard;
+export default React.memo(UserCards);

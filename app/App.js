@@ -14,7 +14,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
-import UserCard from './components/userCard';
+import UserCards from './components/UserCards';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import {DEVICE_HEIGHT, DEVICE_WIDTH} from './utils';
 import Icon from 'react-native-vector-icons/EvilIcons';
@@ -29,7 +29,6 @@ const VIEWABILITY_CONFIG = {
 
 const App: () => Node = () => {
   const STORED_USERS = useSelector(getUsers());
-  const dispatch = useDispatch();
 
   const isDarkMode = useColorScheme() === 'dark';
   /*
@@ -118,12 +117,13 @@ const App: () => Node = () => {
   const handleRefresh = () => {
     // setIsRefreshing(true);
   };
+  const renderItem = ({item}) => <UserCards key={item.id} item={item} />;
+  const keyExtractor = ({id}) => String(id);
 
-  const UsersList = React.memo(() => {
-    const renderItem = ({item}) => UserCard(item, dispatch);
-    const keyExtractor = ({id}) => String(id);
-
-    return (
+  return (
+    <SafeAreaView style={backgroundStyle}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+      {renderHeader()}
       <FlatList
         data={users}
         ItemSeparatorComponent={renderItemSeparator}
@@ -142,14 +142,6 @@ const App: () => Node = () => {
         renderItem={renderItem}
         viewabilityConfig={VIEWABILITY_CONFIG}
       />
-    );
-  });
-
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      {renderHeader()}
-      <UsersList />
     </SafeAreaView>
   );
 };
