@@ -13,7 +13,7 @@ import {
   FlatList,
   RefreshControl,
 } from 'react-native';
-import {useSelector, useDispatch} from 'react-redux';
+import {useSelector} from 'react-redux';
 import UserCards from './components/UserCards';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import {DEVICE_HEIGHT, DEVICE_WIDTH} from './utils';
@@ -27,16 +27,23 @@ const VIEWABILITY_CONFIG = {
   waitForInteraction: true,
 };
 
+/*
+ * 0 - Sort ascending,
+ * 1 - Sort descending,
+ * 2 - reset Sort
+ */
+const SORT_TYPE = {
+  ASC: 0,
+  DESC: 1,
+  RESET: 2,
+};
+
 const App: () => Node = () => {
   const STORED_USERS = useSelector(getUsers());
 
   const isDarkMode = useColorScheme() === 'dark';
-  /*
-   * 0 - Sort ascending,
-   * 1 - Sort descending,
-   * 2 - reset Sort
-   */
-  const [sortMethod, setSortMethod] = useState(0);
+
+  const [sortMethod, setSortMethod] = useState(SORT_TYPE.ASC);
   const [users, setUsers] = useState([]);
   const [unsortedUsers, setUnsortedUsers] = useState([]);
   const [searchInput, setSearchInput] = useState('');
@@ -59,7 +66,7 @@ const App: () => Node = () => {
   }, [STORED_USERS, searchInput]);
 
   useEffect(() => {
-    setSortMethod(0);
+    setSortMethod(SORT_TYPE.ASC);
     setUnsortedUsers([]);
   }, [searchInput]);
 
@@ -68,14 +75,14 @@ const App: () => Node = () => {
       setUnsortedUsers([...users]);
     }
     switch (sortMethod) {
-      case 0: {
+      case SORT_TYPE.ASC: {
         setUnsortedUsers([...users]);
         setSortMethod(prevState => prevState + 1);
         return setUsers(prevState =>
           prevState.sort((a, b) => (a.age >= b.age ? 1 : -1)),
         );
       }
-      case 1: {
+      case SORT_TYPE.DESC: {
         setSortMethod(prevState => prevState + 1);
         return setUsers(prevState =>
           prevState.sort((a, b) => (a.age <= b.age ? 1 : -1)),
@@ -83,7 +90,7 @@ const App: () => Node = () => {
       }
       default:
         setUsers([...unsortedUsers]);
-        return setSortMethod(0);
+        return setSortMethod(SORT_TYPE.ASC);
     }
   };
 
@@ -101,12 +108,18 @@ const App: () => Node = () => {
         name={
           sortMethod > 1
             ? 'close-o'
-            : sortMethod === 0
+            : sortMethod === SORT_TYPE.ASC
             ? 'arrow-up'
             : 'arrow-down'
         }
         size={25}
-        color={sortMethod > 1 ? 'red' : sortMethod === 0 ? 'green' : 'orange'}
+        color={
+          sortMethod > 1
+            ? 'red'
+            : sortMethod === SORT_TYPE.ASC
+            ? 'green'
+            : 'orange'
+        }
         onPress={sortUsers}
         backgroundColor={'#FFF'}>
         Sort

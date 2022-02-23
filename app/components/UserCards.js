@@ -7,7 +7,7 @@ import {useDispatch} from 'react-redux';
 const UserCards: () => Node = ({item}) => {
   const dispatch = useDispatch();
   return (
-    <View key={item.id} style={styles.userContainer}>
+    <View style={styles.userContainer}>
       <View style={styles.userInfoContainer}>
         <Image source={{uri: item.avatar}} style={styles.avatar} />
         <Text style={styles.userName}>{item.name}</Text>
