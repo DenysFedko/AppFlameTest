@@ -8,34 +8,15 @@ import {
   Text,
   useColorScheme,
   View,
-  Image,
-  Button,
   TextInput,
   FlatList,
   RefreshControl,
-  Dimensions
 } from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
-import {removeUser} from './store/actions/users';
+import UserCard from './components/userCard';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
-const {width, height} = Dimensions.get('window');
-const DEVICE_HEIGHT = height;
-const DEVICE_WIDTH = width;
-
-const Section = ({children}): Node => {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <Text
-      style={[
-        styles.sectionDescription,
-        {
-          color: isDarkMode ? Colors.light : Colors.dark,
-        },
-      ]}>
-      {children}
-    </Text>
-  );
-};
+import {DEVICE_HEIGHT, DEVICE_WIDTH} from './utils';
+import Icon from 'react-native-vector-icons/EvilIcons';
 
 const getUsers = () => state => state.users.list;
 
@@ -45,26 +26,8 @@ const VIEWABILITY_CONFIG = {
   waitForInteraction: true,
 };
 
-const PAGINATION_LIMIT = 10;
-
-const INITIAL_PARAMS = {
-  data: {
-    active: 1,
-  },
-  metadata: {
-    pagination: {
-      page: 1,
-      limit: PAGINATION_LIMIT,
-    },
-  },
-  restartPagination: true,
-};
-
 const App: () => Node = () => {
-  const USERS = useSelector(getUsers());
-  // const activeAdsPagination = useSelector(
-  //   state => state.users.activeAdsPagination,
-  // );
+  const STORED_USERS = useSelector(getUsers());
   const dispatch = useDispatch();
 
   const isDarkMode = useColorScheme() === 'dark';
@@ -87,26 +50,32 @@ const App: () => Node = () => {
   useEffect(() => {
     searchInput
       ? setUsers(
-          [...USERS].filter(
+          [...STORED_USERS].filter(
             user =>
               user.name.toUpperCase().indexOf(searchInput.toUpperCase()) !== -1,
           ),
         )
-      : setUsers([...USERS]);
-  }, [USERS, searchInput]);
+      : setUsers([...STORED_USERS]);
+  }, [STORED_USERS, searchInput]);
+
+  useEffect(() => {
+    setSortMethod(0);
+    setUnsortedUsers([]);
+  }, [searchInput]);
 
   const sortUsers = () => {
+    if (users.length !== unsortedUsers.length) {
+      setUnsortedUsers([...users]);
+    }
     switch (sortMethod) {
       case 0: {
         setUnsortedUsers([...users]);
-        console.log('SORT 0', sortMethod);
         setSortMethod(prevState => prevState + 1);
         return setUsers(prevState =>
           prevState.sort((a, b) => (a.age >= b.age ? 1 : -1)),
         );
       }
       case 1: {
-        console.log('SORT 1', sortMethod);
         setSortMethod(prevState => prevState + 1);
         return setUsers(prevState =>
           prevState.sort((a, b) => (a.age <= b.age ? 1 : -1)),
@@ -118,25 +87,6 @@ const App: () => Node = () => {
     }
   };
 
-  const renderItem = ({item}) => {
-    return (
-      <View key={item.id} style={styles.userContainer}>
-        <Image
-          source={{uri: item.avatar}}
-          style={{width: 24, height: 24, borderRadius: 20}}
-        />
-        <Section>{item.name}</Section>
-        <Section>{item.age}</Section>
-
-        <Button onPress={() => dispatch(removeUser(item))} title={'Remove'} />
-      </View>
-    );
-  };
-
-  const fetchActiveAds = params => {
-    // dispatch(Ducks.fetchActiveAds(params));
-  };
-
   const renderItemSeparator = () => <View />;
 
   const renderHeader = () => (
@@ -145,62 +95,38 @@ const App: () => Node = () => {
         style={styles.input}
         onChangeText={setSearchInput}
         value={searchInput}
+        placeholder={'Search...'}
       />
-      {/*<Text>{USERS.length}</Text>*/}
-      <Button onPress={sortUsers} title={`Sort ${sortMethod === 0 ? '^': '|'}`}>
-      </Button>
+      <Icon.Button
+        name={
+          sortMethod > 1
+            ? 'close-o'
+            : sortMethod === 0
+            ? 'arrow-up'
+            : 'arrow-down'
+        }
+        size={25}
+        color={sortMethod > 1 ? 'red' : sortMethod === 0 ? 'green' : 'orange'}
+        onPress={sortUsers}
+        backgroundColor={'#FFF'}>
+        Sort
+      </Icon.Button>
     </View>
   );
 
-  const renderFooter = () => {
-    return false ? (
-      <View>
-        <ActivityIndicator />
-      </View>
-    ) : (
-      renderItemSeparator()
-    );
-  };
-
-  const keyExtractor = ({id}) => String(id);
-
-  // const loadMoreResults = () => {
-  //   const {page, pages} = activeAdsPagination;
-  //   const nextPage = page + 1;
-  //
-  //   if (nextPage <= pages) {
-  //     const params = {
-  //       data: {
-  //         active: 1,
-  //       },
-  //       metadata: {
-  //         pagination: {
-  //           page: nextPage,
-  //           limit: PAGINATION_LIMIT,
-  //         },
-  //       },
-  //       restartPagination: false,
-  //     };
-  //
-  //     // dispatch(Ducks.fetchActiveAds(params));
-  //   }
-  // };
-
   const handleRefresh = () => {
     // setIsRefreshing(true);
-    // fetchActiveAds(INITIAL_PARAMS);
   };
 
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      {renderHeader()}
+  const UsersList = React.memo(() => {
+    const renderItem = ({item}) => UserCard(item, dispatch);
+    const keyExtractor = ({id}) => String(id);
+
+    return (
       <FlatList
         data={users}
         ItemSeparatorComponent={renderItemSeparator}
         keyExtractor={keyExtractor}
-        ListFooterComponent={renderFooter}
-        // ListHeaderComponent={renderHeader}
         ListEmptyComponent={
           <View style={styles.emptyListContainer}>
             <Text style={styles.emptyListText}>List is empty</Text>
@@ -213,8 +139,16 @@ const App: () => Node = () => {
         }
         removeClippedSubviews={false}
         renderItem={renderItem}
-        // viewabilityConfig={VIEWABILITY_CONFIG}
+        viewabilityConfig={VIEWABILITY_CONFIG}
       />
+    );
+  });
+
+  return (
+    <SafeAreaView style={backgroundStyle}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+      {renderHeader()}
+      <UsersList />
     </SafeAreaView>
   );
 };
@@ -229,28 +163,21 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '400',
   },
-  userContainer: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderRadius: 8,
-    borderColor: 'gray',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginVertical: 8,
-    marginHorizontal: 16,
-    padding: 10,
-  },
   headerContainer: {
     height: DEVICE_HEIGHT * 0.1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
   },
   input: {
-    width: DEVICE_WIDTH * 0.7,
-    height: 50,
+    backgroundColor: '#FFF',
+    width: DEVICE_WIDTH * 0.6,
+    height: 36,
     paddingLeft: 12,
     borderWidth: 1,
-    margin: 16,
+    borderRadius: 4,
+    borderColor: 'lightgray',
     fontSize: 18,
     fontWeight: '400',
   },
